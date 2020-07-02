@@ -18,6 +18,7 @@ using System.Xml.Serialization;
 using BaSyx.Models.Core.Common;
 using BaSyx.Models.Core.AssetAdministrationShell.Views;
 using BaSyx.Models.Core.AssetAdministrationShell.Semantics;
+using System;
 
 namespace BaSyx.Models.Core.AssetAdministrationShell.Implementations
 {
