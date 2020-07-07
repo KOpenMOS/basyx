@@ -112,7 +112,7 @@ namespace BaSyx.API.Components
 
         public void UnregisterAssetAdministrationShellServiceProvider(string id)
         {
-            if (!AssetAdministrationShellServiceProviders.ContainsKey(id))
+            if (AssetAdministrationShellServiceProviders.ContainsKey(id))
                 AssetAdministrationShellServiceProviders.Remove(id);
         }
 
