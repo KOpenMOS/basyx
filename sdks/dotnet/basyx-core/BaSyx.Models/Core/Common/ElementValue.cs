@@ -34,6 +34,10 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.Implementations
 
         public event EventHandler<ValueChangedArgs> ValueChanged;
 
+        public ElementValue()
+        {
+        }
+
         [JsonConstructor]
         public ElementValue(object value, DataType valueType)
         {

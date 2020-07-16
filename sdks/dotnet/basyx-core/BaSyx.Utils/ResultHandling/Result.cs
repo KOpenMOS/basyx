@@ -37,6 +37,8 @@ namespace BaSyx.Utils.ResultHandling
                 return this.messages;
             }
         }
+        public Result() : this(true, null, null, null)
+        { }
         public Result(bool success) : this(success, null, null, null)
         { }
         public Result(bool success, IMessage message) : this(success, new List<IMessage>() { message })
@@ -50,9 +52,6 @@ namespace BaSyx.Utils.ResultHandling
 
         public Result(Exception e) :
             this(false, GetMessageListFromException(e))
-        { }
-
-        public Result(IResult result) : this(result.Success, result.Entity, result.EntityType, result.Messages)
         { }
 
         public static List<IMessage> GetMessageListFromException(Exception e)
@@ -128,6 +127,8 @@ namespace BaSyx.Utils.ResultHandling
     {
         [IgnoreDataMember]
         public new TEntity Entity { get; private set; }
+        public Result() : this(true)
+        { }
         public Result(bool success) : this(success, default(TEntity), new List<IMessage>())
         { }
         public Result(bool success, TEntity entity) : this(success, entity, new List<IMessage>())
@@ -139,8 +140,6 @@ namespace BaSyx.Utils.ResultHandling
         public Result(bool success, TEntity entity, IMessage message) : this(success, entity, new MessageCollection { message })
         { }
         public Result(Exception e) : base(e)
-        { }
-        public Result(IResult result) : base(result)
         { }
         public Result(bool success, TEntity entity, List<IMessage> messages) : base(success, entity, typeof(TEntity), messages)
         {

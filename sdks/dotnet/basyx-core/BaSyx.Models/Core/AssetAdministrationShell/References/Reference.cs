@@ -35,6 +35,9 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.References
         [DataMember(EmitDefaultValue = false, IsRequired = false, Name = "keys")]
         public List<IKey> Keys { get; protected set; }
 
+        public Reference()
+        { }
+
         [JsonConstructor]
         public Reference(params IKey[] keys)
         {
@@ -55,6 +58,9 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.References
     [DataContract]
     public class Reference<T> : Reference, IReference<T> where T : IReferable
     {
+        public Reference()
+        { }
+
         [JsonConstructor]
         public Reference(params IKey[] keys) : base(keys)
         { }

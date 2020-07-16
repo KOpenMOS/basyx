@@ -39,7 +39,7 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.References
         [XmlAttribute("local")]
         public bool Local { get; set; }
 
-        internal Key() { }
+        public Key() { }
 
         [JsonConstructor]
         public Key(KeyElements type, KeyType idType, string value, bool local)
