@@ -19,6 +19,11 @@ namespace BaSyx.Utils.ResultHandling
         public string Text { get; set; }
         public string Code { get; set; }
 
+        public Message()
+        {
+
+        }
+
         public Message(MessageType messageType, string text) : this(messageType, text, null)
         { }
         [JsonConstructor]
