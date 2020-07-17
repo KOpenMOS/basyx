@@ -265,7 +265,7 @@ namespace BaSyx.API.Components
                     callbackResponse.CallbackUrl = new Uri($"{endpoint}/operations/{operationId}/invocationList/{invocationRequest.RequestId}", UriKind.Absolute);
                 return new Result<CallbackResponse>(true, callbackResponse);
             }
-            return new Result<CallbackResponse>(operation_Retrieved);
+            return new Result<CallbackResponse>(operation_Retrieved.Success);
         }
 
         private void SetInvocationResult(string operationId, string requestId, ref InvocationResponse invocationResponse)
@@ -325,7 +325,7 @@ namespace BaSyx.API.Components
                     return new Result<InvocationResponse>(e);
                 }
             }
-            return new Result<InvocationResponse>(operation_Retrieved);
+            return new Result<InvocationResponse>(operation_Retrieved.Success);
         }
 
         public IResult ThrowEvent(IPublishableEvent publishableEvent, string topic = "/", Action<IMessagePublishedEventArgs> MessagePublished = null, byte qosLevel = 2, bool retain = false)
