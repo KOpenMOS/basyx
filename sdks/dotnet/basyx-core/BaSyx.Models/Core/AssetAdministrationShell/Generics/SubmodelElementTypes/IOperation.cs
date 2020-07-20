@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace BaSyx.Models.Core.AssetAdministrationShell.Generics.SubmodelElementTypes
 {
-    public delegate Task<OperationResult> MethodCalledHandler(IServiceProvider serviceProvider, IOperation operation, IOperationVariableSet inputArguments, IOperationVariableSet outputArguments);
+    public delegate Task<OperationResult> MethodCalledHandler(IOperation operation, IOperationVariableSet inputArguments, IOperationVariableSet outputArguments);
 
     /// <summary>
     /// An operation is a submodel element with input and output variables. 
