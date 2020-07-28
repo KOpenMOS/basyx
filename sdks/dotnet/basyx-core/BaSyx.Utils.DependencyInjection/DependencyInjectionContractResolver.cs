@@ -49,23 +49,23 @@ namespace BaSyx.Utils.DependencyInjection
                 return CreateObjectContract(objectType);
         }
 
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-        {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
+        //protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        //{
+        //    JsonProperty property = base.CreateProperty(member, memberSerialization);
 
-            if (property.PropertyType != typeof(string))
-            {
-                if (property.PropertyType.GetInterface(nameof(IEnumerable)) != null)
-                    property.ShouldSerialize =
-                        instance =>
-                        {
-                            var value = instance?.GetType().GetProperty(member.Name)?.GetValue(instance);
-                            if (value != null)
-                                return (value as IEnumerable<object>)?.Count() > 0;
-                            return false;
-                        };
-            }
-            return property;
-        }
+        //    if (property.PropertyType != typeof(string))
+        //    {
+        //        if (property.PropertyType.GetInterface(nameof(IEnumerable)) != null)
+        //            property.ShouldSerialize =
+        //                instance =>
+        //                {
+        //                    var value = instance?.GetType().GetProperty(member.Name)?.GetValue(instance);
+        //                    if (value != null)
+        //                        return (value as IEnumerable<object>)?.Count() > 0;
+        //                    return false;
+        //                };
+        //    }
+        //    return property;
+        //}
     }
 }
