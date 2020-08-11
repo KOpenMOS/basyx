@@ -75,7 +75,7 @@ namespace BaSyx.Models.Core.Common
                 ElementContainer<T> container = new ElementContainer<T>();
                 foreach (var element in this)
                 {
-                    T tElement = element.ToModelElement<T>();
+                    T tElement = element.Cast<T>();
                     if (tElement != null)
                         container.Add(tElement);
                 }
@@ -104,7 +104,7 @@ namespace BaSyx.Models.Core.Common
             if (string.IsNullOrEmpty(id))
                 return new Result<T>(new ArgumentNullException(nameof(id)));
 
-            T element = this[id].ToModelElement<T>();
+            T element = this[id].Cast<T>();
             if (element != null)
                 return new Result<T>(true, element);
             else
