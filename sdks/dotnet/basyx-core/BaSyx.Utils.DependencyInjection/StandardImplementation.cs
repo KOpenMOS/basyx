@@ -11,6 +11,7 @@
 using BaSyx.Models.Connectivity.Descriptors;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics;
 using BaSyx.Models.Core.AssetAdministrationShell.Generics.SubmodelElementTypes;
+using BaSyx.Models.Core.AssetAdministrationShell.Identification;
 using BaSyx.Models.Core.AssetAdministrationShell.Implementations;
 using BaSyx.Models.Core.AssetAdministrationShell.Implementations.SubmodelElementTypes;
 using BaSyx.Models.Core.AssetAdministrationShell.References;
@@ -66,6 +67,7 @@ namespace BaSyx.Utils.DependencyInjection
             services.AddTransient(typeof(IReference<Asset>), typeof(Reference<Asset>));
             services.AddTransient(typeof(IReference<Submodel>), typeof(Reference<Submodel>));
             services.AddTransient(typeof(IReference<ConceptDescription>), typeof(Reference<ConceptDescription>));
+            services.AddTransient(typeof(IReference<IReferable>), typeof(Reference<IReferable>));
 
             return services;
         }
