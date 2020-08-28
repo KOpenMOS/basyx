@@ -62,7 +62,8 @@ namespace BaSyx.Utils.DependencyInjection
             services.AddTransient(typeof(IResult<>), typeof(Result<>));
             services.AddTransient<IMessage, Message>();
 
-            services.AddTransient<IReference, Reference>();
+            services.AddTransient<IReference, Reference>();            
+            services.AddTransient(typeof(IReference<IAssetAdministrationShell>), typeof(Reference<AssetAdministrationShell>));
             services.AddTransient(typeof(IReference<AssetAdministrationShell>), typeof(Reference<AssetAdministrationShell>));
             services.AddTransient(typeof(IReference<Asset>), typeof(Reference<Asset>));
             services.AddTransient(typeof(IReference<Submodel>), typeof(Reference<Submodel>));
