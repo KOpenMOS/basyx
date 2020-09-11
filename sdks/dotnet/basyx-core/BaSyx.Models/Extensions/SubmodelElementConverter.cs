@@ -35,7 +35,7 @@ namespace BaSyx.Models.Extensions
             foreach (Type type in types)
             {
                 var attrib = type.GetCustomAttribute(typeof(DataSpecificationAttribute), false);
-                if(attrib != null && attrib is DataSpecificationAttribute dataSpecificationAttribute)
+                if (attrib != null && attrib is DataSpecificationAttribute dataSpecificationAttribute)
                 {
                     DataElementInformationTypes.Add(dataSpecificationAttribute.Reference.First.Value, type);
                 }
@@ -83,10 +83,10 @@ namespace BaSyx.Models.Extensions
                 }
                 jObject.Remove("embeddedDataSpecifications");
             }
-            if(conceptDescriptionToken != null)
+            if (conceptDescriptionToken != null)
             {
                 var dataSpecifications = conceptDescriptionToken.SelectToken("embeddedDataSpecifications")?.Children();
-                if(dataSpecifications != null)
+                if (dataSpecifications != null)
                 {
                     conceptDescription = new ConceptDescription();
                     foreach (var dataSpecificationToken in dataSpecifications)
@@ -120,9 +120,16 @@ namespace BaSyx.Models.Extensions
                 return null;
             }
 
-            serializer.Populate(jObject.CreateReader(), submodelElement);
+            try
+            {
+                serializer.Populate(jObject.CreateReader(), submodelElement);
+            }
+            catch (Exception ex)
+            {
+                //throw ex;
+            }
+            return submodelElement;
 
-            return submodelElement;            
         }
 
         public override void WriteJson(JsonWriter writer, ISubmodelElement value, JsonSerializer serializer)

@@ -31,7 +31,7 @@ namespace BaSyx.Models.Core.AssetAdministrationShell.References
         [XmlAttribute("idType")]
         public KeyType IdType { get; set; }
 
-        [JsonProperty(Required = Required.Always, DefaultValueHandling = DefaultValueHandling.Include)]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Include)]
         [XmlText]
         public string Value { get; set; }
 
