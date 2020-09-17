@@ -16,6 +16,7 @@ import org.eclipse.basyx.submodel.metamodel.api.submodelelement.dataelement.IDat
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.dataelement.IProperty;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.operation.IOperation;
 import org.eclipse.basyx.submodel.metamodel.connected.submodelelement.ConnectedSubmodelElementFactory;
+import org.eclipse.basyx.submodel.metamodel.map.SubModel;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.AdministrativeInformation;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.HasDataSpecification;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.HasSemantics;
@@ -43,18 +44,17 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 	}
 
 	protected KeyElements getKeyElement() {
-		return KeyElements.SUBMODELELEMENT;
+		return KeyElements.SUBMODEL;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public IReference getSemanticId() {
-		return Reference.createAsFacade((Map<String, Object>) getElem().get(HasSemantics.SEMANTICID));
+		return HasSemantics.createAsFacade(getElem()).getSemanticId();
 	}
 
 	@Override
 	public IAdministrativeInformation getAdministration() {
-		return AdministrativeInformation.createAsFacade(getElem());
+		return Identifiable.createAsFacade(getElem(), getKeyElement()).getAdministration();
 	}
 
 	@Override
@@ -92,15 +92,14 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 		return Referable.createAsFacade(getElem(), getKeyElement()).getDescription();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public IReference getParent() {
-		return Reference.createAsFacade((Map<String, Object>) getElem().getPath(Referable.PARENT));
+		return Referable.createAsFacade(getElem(), getKeyElement()).getParent();
 	}
 	
 	@Override
-	public Collection<IConstraint> getQualifier() {
-		return Qualifiable.createAsFacade(getElem()).getQualifier();
+	public Collection<IConstraint> getQualifiers() {
+		return Qualifiable.createAsFacade(getElem()).getQualifiers();
 	}
 
 	@Override
@@ -139,5 +138,16 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 	@Override
 	public IReference getReference() {
 		return Identifiable.createAsFacade(getElem(), getKeyElement()).getReference();
+	}
+
+	/**
+	 * Returns a local copy of the submodel, i.e. a snapshot of the current state.
+	 * <br>
+	 * No changes of this copy are reflected in the remote Submodel
+	 * 
+	 * @return the local copy
+	 */
+	public SubModel getLocalCopy() {
+		return SubModel.createAsFacade(getElem());
 	}
 }

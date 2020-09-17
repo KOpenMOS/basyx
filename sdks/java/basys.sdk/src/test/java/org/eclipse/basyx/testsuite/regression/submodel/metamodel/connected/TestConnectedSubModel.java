@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.eclipse.basyx.aas.metamodel.map.descriptor.ModelUrn;
+import org.eclipse.basyx.submodel.metamodel.api.identifier.IIdentifier;
 import org.eclipse.basyx.submodel.metamodel.api.identifier.IdentifierType;
 import org.eclipse.basyx.submodel.metamodel.api.reference.IReference;
 import org.eclipse.basyx.submodel.metamodel.api.reference.enums.KeyElements;
@@ -58,7 +60,8 @@ public class TestConnectedSubModel {
 
 	private final static Reference testSemanticIdRef = new Reference(new Key(KeyElements.CONCEPTDESCRIPTION, false, "testVal", IdentifierType.CUSTOM));
 
-	ConnectedSubModel submodel;
+	private ConnectedSubModel submodel;
+	private SubModel localSubmodel;
 
 	@Before
 	public void build() {
@@ -73,13 +76,15 @@ public class TestConnectedSubModel {
 		op.setIdShort(OP);
 
 		// Create the SubModel using the created property and operation
-		SubModel sm = new SubModel();
-		sm.addSubModelElement(propertyMeta);
-		sm.addSubModelElement(op);
-		sm.setIdShort(ID);
-		sm.setSemanticId(testSemanticIdRef);
+		localSubmodel = new SubModel();
+		IIdentifier submodelId = new ModelUrn("testUrn");
+		localSubmodel.setIdentification(submodelId.getIdType(), submodelId.getId());
+		localSubmodel.addSubModelElement(propertyMeta);
+		localSubmodel.addSubModelElement(op);
+		localSubmodel.setIdShort(ID);
+		localSubmodel.setSemanticId(testSemanticIdRef);
 
-		SubModelProvider provider = new SubModelProvider(new TypeDestroyingProvider(new VABLambdaProvider(sm)));
+		SubModelProvider provider = new SubModelProvider(new TypeDestroyingProvider(new VABLambdaProvider(localSubmodel)));
 
 		// Create the ConnectedSubModel based on the manager
 		submodel = new ConnectedSubModel(new VABConnectionManagerStub(provider).connectToVABElement(""));
@@ -204,16 +209,25 @@ public class TestConnectedSubModel {
 	 * Also checks the addition of parent reference to the submodel
 	 */
 	@Test
-	public void addSubModelElementTest() {
+	public void addSubModelElementTest() throws Exception {
 		Property property = new Property("testProperty");
 		property.setIdShort("testIdShort");
 		submodel.addSubModelElement(property);
 		
+		IProperty connectedProperty = (IProperty)submodel.getSubmodelElements().get("testIdShort");
+		assertEquals(property.getIdShort(), connectedProperty.getIdShort());
+		assertEquals(property.get(), connectedProperty.get());
+		
 		// creates an expected reference for assertion
-		Reference expected = new Reference(new Key(KeyElements.SUBMODELELEMENT, true, "", IdentifierType.IRDI));
+		IReference expected = submodel.getReference();
 		assertEquals(expected, property.getParent());
 	} 
 	
+	@Test
+	public void testGetLocalCopy() {
+		assertEquals(localSubmodel, submodel.getLocalCopy());
+	}
+
 	/**
 	 * Generates test IDataElements
 	 */
@@ -297,6 +311,7 @@ public class TestConnectedSubModel {
 		assertEquals(expectedOperation.getIdShort(), actualOperation.getIdShort());
 	}
 	
+
 	/**
 	 * Checks if the given Map contains all expected ISubmodelElements
 	 */

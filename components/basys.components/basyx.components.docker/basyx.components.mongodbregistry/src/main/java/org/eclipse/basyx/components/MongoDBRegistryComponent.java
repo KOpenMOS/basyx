@@ -1,6 +1,6 @@
 package org.eclipse.basyx.components;
 
-import org.eclipse.basyx.components.mongodbregistry.BaSyxMongoDBConfiguration;
+import org.eclipse.basyx.components.configuration.BaSyxMongoDBConfiguration;
 import org.eclipse.basyx.components.servlet.MongoDBRegistryServlet;
 import org.eclipse.basyx.vab.protocol.http.server.AASHTTPServer;
 import org.eclipse.basyx.vab.protocol.http.server.BaSyxContext;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author espen
  */
-public class MongoDBRegistryComponent {
+public class MongoDBRegistryComponent implements IComponent {
 	private static Logger logger = LoggerFactory.getLogger(MongoDBRegistryComponent.class);
 
 	// BaSyx context information
@@ -49,6 +49,7 @@ public class MongoDBRegistryComponent {
 	/**
 	 * Starts the SQLRegistry at http://${hostName}:${port}/${path}
 	 */
+	@Override
 	public void startComponent() {
 		logger.info("Create the server...");
 		// Init HTTP context and add an InMemoryRegistryServlet according to the configuration
@@ -58,5 +59,10 @@ public class MongoDBRegistryComponent {
 
 		logger.info("Start the server...");
 		server.start();
+	}
+
+	@Override
+	public void stopComponent() {
+		server.shutdown();
 	}
 }

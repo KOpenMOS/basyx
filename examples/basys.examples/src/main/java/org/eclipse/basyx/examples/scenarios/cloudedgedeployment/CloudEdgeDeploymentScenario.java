@@ -1,9 +1,15 @@
 package org.eclipse.basyx.examples.scenarios.cloudedgedeployment;
 
-import org.basyx.components.AASServer.AASServerComponent;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.basyx.aas.manager.ConnectedAssetAdministrationShellManager;
 import org.eclipse.basyx.aas.registration.api.IAASRegistryService;
-import org.eclipse.basyx.aas.registration.memory.InMemoryRegistry;
+import org.eclipse.basyx.aas.registration.proxy.AASRegistryProxy;
+import org.eclipse.basyx.components.AASServerComponent;
+import org.eclipse.basyx.components.IComponent;
+import org.eclipse.basyx.components.InMemoryRegistryComponent;
 import org.eclipse.basyx.components.servlet.submodel.SubmodelServlet;
 import org.eclipse.basyx.submodel.metamodel.api.identifier.IIdentifier;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
@@ -20,7 +26,7 @@ import org.eclipse.basyx.vab.protocol.http.server.BaSyxContext;
  * Server B is created as a server hosted near a machine.
  * It provides a Submodel containing sensor value.
  * 
- * @author conradi
+ * @author conradi, schnicke
  *
  */
 public class CloudEdgeDeploymentScenario {
@@ -28,7 +34,8 @@ public class CloudEdgeDeploymentScenario {
 	/**
 	 * The registry used in the manager
 	 */
-	public IAASRegistryService registry;
+	private IAASRegistryService registry;
+	public static String registryPath = "http://localhost:8080/registry";
 	
 	/**
 	 * AASManager used to handle registration and server communication
@@ -52,6 +59,10 @@ public class CloudEdgeDeploymentScenario {
 	 */
 	public IIdentifier edgeSmIdentifier = ComponentBuilder.getEdgeSubmodelDescriptor().getIdentifier();
 
+	// Used for shutting down the scenario
+	private List<IComponent> startedComponents = new ArrayList<>();
+	private AASHTTPServer edgeServer;
+
 	/**
 	 * Main method to start the scenario
 	 * 
@@ -66,12 +77,13 @@ public class CloudEdgeDeploymentScenario {
 	 */
 	public CloudEdgeDeploymentScenario() {
 		
+		startupRegistryServer();
 		startupEdgeServer();
 		startupCloudServer();
 		
 		
 		// Create a InMemoryRegistry to be used by the manager
-		registry = new InMemoryRegistry();
+		registry = new AASRegistryProxy(registryPath);
 		
 		// Create a ConnectedAASManager with the registry created above
 		aasManager = new ConnectedAssetAdministrationShellManager(registry);
@@ -94,6 +106,16 @@ public class CloudEdgeDeploymentScenario {
 		registry.register(aasIdentifier, ComponentBuilder.getEdgeSubmodelDescriptor());
 	}
 	
+	/**
+	 * Startup an empty registry at "http://localhost:8080/registry"
+	 * 
+	 */
+	private void startupRegistryServer() {
+		IComponent component = new InMemoryRegistryComponent("localhost", 8080, "registry", "");
+		component.startComponent();
+		startedComponents.add(component);
+	}
+
 	/**
 	 * Startup a server responsible for hosting the "current_temp" edgeSubModel
 	 * at the endpoint "http://localhost:8082/oven/current_temp"
@@ -118,7 +140,7 @@ public class CloudEdgeDeploymentScenario {
 		
 		
 		// Create and start a HTTP server with the context created above
-		AASHTTPServer edgeServer = new AASHTTPServer(context);
+		edgeServer = new AASHTTPServer(context);
 		edgeServer.start();
 	}
 	
@@ -136,6 +158,12 @@ public class CloudEdgeDeploymentScenario {
 		
 		// Start the created server
 		cloudServer.startComponent();
+		startedComponents.add(cloudServer);
+	}
+
+	public void stop() {
+		startedComponents.stream().forEach(IComponent::stopComponent);
+		edgeServer.shutdown();
 	}
 
 }
