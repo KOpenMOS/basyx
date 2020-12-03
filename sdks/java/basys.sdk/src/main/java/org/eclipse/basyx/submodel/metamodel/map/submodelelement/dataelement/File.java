@@ -26,6 +26,15 @@ public class File extends DataElement implements IFile{
 	}
 	
 	/**
+	 * Constructor accepting only mandatory attribute
+	 * @param mimeType
+	 */
+	public File(String mimeType) {
+		this();
+		setMimeType(mimeType);
+	}
+	
+	/**
 	 * Creates a file data element. It has to have a mimeType <br/>
 	 * An absolute path is used in the case that the file exists independently of
 	 * the AAS. A relative path, relative to the package root should be used if the
@@ -71,8 +80,15 @@ public class File extends DataElement implements IFile{
 				|| (modelType == null && (map.containsKey(Property.VALUE) && map.containsKey(MIMETYPE)));
 	}
 
-	public void setValue(String value) {
-		put(Property.VALUE, value);
+	@Override
+	public void setValue(Object value) {
+		if(value instanceof String) {
+			put(Property.VALUE, (String) value);
+		}
+		else {
+			throw new IllegalArgumentException("Given Object is not a String");
+		}
+		
 	}
 
 	@Override

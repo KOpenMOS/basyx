@@ -1,6 +1,7 @@
 package org.eclipse.basyx.testsuite.regression.aas.metamodel.connected;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import org.eclipse.basyx.aas.manager.ConnectedAssetAdministrationShellManager;
 import org.eclipse.basyx.aas.metamodel.api.IAssetAdministrationShell;
@@ -12,6 +13,7 @@ import org.eclipse.basyx.aas.registration.api.IAASRegistryService;
 import org.eclipse.basyx.aas.registration.memory.InMemoryRegistry;
 import org.eclipse.basyx.aas.restapi.AASModelProvider;
 import org.eclipse.basyx.aas.restapi.VABMultiSubmodelProvider;
+import org.eclipse.basyx.submodel.metamodel.api.ISubModel;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
 import org.eclipse.basyx.submodel.restapi.SubModelProvider;
 import org.eclipse.basyx.testsuite.regression.aas.metamodel.AssetAdministrationShellSuite;
@@ -40,14 +42,14 @@ public class TestConnectedAssetAdministrationShell extends AssetAdministrationSh
 
 		SubModel sm = retrieveBaselineSM();
 		sm.setParent(shell.getReference());
-		provider.addSubmodel(SMIDSHORT, new SubModelProvider(SubModel.createAsFacade(TypeDestroyer.destroyType(sm))));
+		provider.addSubmodel(new SubModelProvider(SubModel.createAsFacade(TypeDestroyer.destroyType(sm))));
 
 		// Create AAS registry
 		IAASRegistryService registry = new InMemoryRegistry();
 		// Create AAS Descriptor
 		AASDescriptor aasDescriptor = new AASDescriptor(AASID, "/aas");
 		// Create Submodel Descriptor
-		SubmodelDescriptor smDescriptor2 = new SubmodelDescriptor(SMIDSHORT, SMID, "/aas/submodels/" + SMIDSHORT);
+		SubmodelDescriptor smDescriptor2 = new SubmodelDescriptor(SMIDSHORT, SMID, "/aas/submodels/" + SMIDSHORT + "/submodel");
 		// Add Submodel descriptor to aas descriptor
 		aasDescriptor.addSubmodelDescriptor(smDescriptor2);
 
@@ -71,9 +73,21 @@ public class TestConnectedAssetAdministrationShell extends AssetAdministrationSh
 	}
 
 	@Test
+	public void testGetSpecificSubmodel() {
+		ISubModel sm = retrieveShell().getSubmodel(SMID);
+		assertEquals(SMIDSHORT, sm.getIdShort());
+	}
+
+	@Test
+	public void testDeleteSubmodel() {
+		retrieveShell().removeSubmodel(SMID);
+		assertFalse(retrieveShell().getSubModels().containsKey(SMIDSHORT));
+	}
+
+	@Test
 	public void testGetLocalCopy() {
 		AASModelProvider aasProvider = new AASModelProvider(retrieveBaselineShell());
-		ConnectedAssetAdministrationShell localCAAS = new ConnectedAssetAdministrationShell(new VABElementProxy("", aasProvider), null);
+		ConnectedAssetAdministrationShell localCAAS = new ConnectedAssetAdministrationShell(new VABElementProxy("", aasProvider));
 
 		assertEquals(retrieveBaselineShell(), localCAAS.getLocalCopy());
 	}

@@ -115,7 +115,7 @@ add_subdirectory(src/utility)
 add_subdirectory(src/vab)
 add_subdirectory(src/server)
 add_subdirectory(src/submodel)
-add_subdirectory(src/aas)
+add_subdirectory(src/controlcomponent)
 
 ###############################################
 ###           Test Directory                ###
@@ -147,7 +147,7 @@ if(${BASYX_INSTALL_SDK})
 # Let the projects using our server infrastucure find asio (interally /
 # externally provided)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/Findasio.cmake
+install(FILES ${CMAKE_SOURCE_DIR}/cmake/Findasio.cmake
 		DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/BaSyxAsio
 )
 

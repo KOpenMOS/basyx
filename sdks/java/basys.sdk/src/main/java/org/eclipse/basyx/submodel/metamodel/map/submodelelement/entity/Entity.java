@@ -32,6 +32,19 @@ public class Entity extends SubmodelElement implements IEntity {
 		putAll(new ModelType(MODELTYPE));
 	}
 	
+	/**
+	 * Constructor accepting only mandatory attribute
+	 * @param idShort
+	 * @param entityType
+	 */
+	public Entity(String idShort, EntityType entityType) {
+		super(idShort);
+		setEntityType(entityType);
+		
+		// Add model type
+		putAll(new ModelType(MODELTYPE));
+	}
+	
 	public Entity(EntityType entityType, Collection<ISubmodelElement> statements, IReference asset) {
 		this();
 		setEntityType(entityType);
@@ -95,5 +108,23 @@ public class Entity extends SubmodelElement implements IEntity {
 	@Override
 	protected KeyElements getKeyElement() {
 		return KeyElements.ENTITY;
+	}
+
+	@Override
+	public EntityValue getValue() {
+		return new EntityValue(getStatements(), getAsset());
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public void setValue(Object value) {
+		if(EntityValue.isEntityValue(value)) {
+			EntityValue ev = EntityValue.createAsFacade((Map<String, Object>) value);
+			put(Entity.STATEMENT, ev.getStatement());
+			put(Entity.ASSET, ev.getAsset());
+		}
+		else {
+			throw new IllegalArgumentException("Given Object is not an EntityValue");
+		}
 	}
 }

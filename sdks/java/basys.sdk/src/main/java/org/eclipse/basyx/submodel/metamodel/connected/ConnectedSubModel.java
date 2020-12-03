@@ -12,12 +12,11 @@ import org.eclipse.basyx.submodel.metamodel.api.qualifier.qualifiable.IConstrain
 import org.eclipse.basyx.submodel.metamodel.api.reference.IReference;
 import org.eclipse.basyx.submodel.metamodel.api.reference.enums.KeyElements;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.ISubmodelElement;
-import org.eclipse.basyx.submodel.metamodel.api.submodelelement.dataelement.IDataElement;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.dataelement.IProperty;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.operation.IOperation;
 import org.eclipse.basyx.submodel.metamodel.connected.submodelelement.ConnectedSubmodelElementFactory;
+import org.eclipse.basyx.submodel.metamodel.facade.SubmodelElementMapCollectionConverter;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
-import org.eclipse.basyx.submodel.metamodel.map.qualifier.AdministrativeInformation;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.HasDataSpecification;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.HasSemantics;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.Identifiable;
@@ -25,10 +24,12 @@ import org.eclipse.basyx.submodel.metamodel.map.qualifier.LangStrings;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.Referable;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.haskind.HasKind;
 import org.eclipse.basyx.submodel.metamodel.map.qualifier.qualifiable.Qualifiable;
-import org.eclipse.basyx.submodel.metamodel.map.reference.Reference;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.SubmodelElement;
-import org.eclipse.basyx.submodel.restapi.SubmodelElementProvider;
+import org.eclipse.basyx.submodel.metamodel.map.submodelelement.SubmodelElementCollection;
+import org.eclipse.basyx.submodel.restapi.MultiSubmodelElementProvider;
+import org.eclipse.basyx.submodel.restapi.SubModelProvider;
 import org.eclipse.basyx.vab.modelprovider.VABElementProxy;
+import org.eclipse.basyx.vab.modelprovider.VABPathTools;
 
 
 /**
@@ -41,6 +42,17 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 
 	public ConnectedSubModel(VABElementProxy proxy) {
 		super(proxy);
+	}
+
+	/**
+	 * Creates a ConnectedSubmodel based on a proxy and an already cached local copy
+	 * 
+	 * @param proxy
+	 * @param localCopy
+	 */
+	public ConnectedSubModel(VABElementProxy proxy, SubModel localCopy) {
+		super(proxy);
+		cached = localCopy;
 	}
 
 	protected KeyElements getKeyElement() {
@@ -102,37 +114,47 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 		return Qualifiable.createAsFacade(getElem()).getQualifiers();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void addSubModelElement(ISubmodelElement element) {
+		String path = VABPathTools.concatenatePaths(MultiSubmodelElementProvider.ELEMENTS, element.getIdShort());
+
 		if (element instanceof SubmodelElement) {
 			((SubmodelElement) element).setParent(getReference());
+			
+			// Convert "value" in SubmodelElementCollection from Map to Collection
+			if (element instanceof SubmodelElementCollection) {
+				Map<String, Object> converted = SubmodelElementMapCollectionConverter.smElementToMap((Map<String, Object>) element);
+				
+				getProxy().setModelPropertyValue(path, converted);
+				return;
+			}
 		}
-		
-		if (element instanceof IDataElement) {
-			getProxy().createValue(SubmodelElementProvider.PROPERTIES, element);
-		} else if (element instanceof IOperation) {
-			getProxy().createValue(SubmodelElementProvider.OPERATIONS, element);
-		} else if (element instanceof ISubmodelElement) {
-			getProxy().createValue(SubmodelElementProvider.ELEMENTS, element);
-		}
+		getProxy().setModelPropertyValue(path, element);
 	}
 
 	@Override
 	public Map<String, IProperty> getProperties() {
-		return ConnectedSubmodelElementFactory.getProperties(getProxy(), SubmodelElementProvider.PROPERTIES,
-						SubmodelElementProvider.PROPERTIES);
+		return ConnectedSubmodelElementFactory.getProperties(getProxy(), MultiSubmodelElementProvider.ELEMENTS,
+						MultiSubmodelElementProvider.ELEMENTS);
 	}
 
 	@Override
 	public Map<String, IOperation> getOperations() {
-		return ConnectedSubmodelElementFactory.getOperations(getProxy(), SubmodelElementProvider.OPERATIONS,
-				SubmodelElementProvider.OPERATIONS);
+		return ConnectedSubmodelElementFactory.getOperations(getProxy(), MultiSubmodelElementProvider.ELEMENTS,
+				MultiSubmodelElementProvider.ELEMENTS);
 	}
 
 	@Override
 	public Map<String, ISubmodelElement> getSubmodelElements() {
 		return ConnectedSubmodelElementFactory.getConnectedSubmodelElements(getProxy(),
-				SubmodelElementProvider.ELEMENTS, SubmodelElementProvider.ELEMENTS);
+				MultiSubmodelElementProvider.ELEMENTS, MultiSubmodelElementProvider.ELEMENTS);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Map<String, Object> getValues() {
+		return (Map<String, Object>) getProxy().getModelPropertyValue(SubModelProvider.VALUES);
 	}
 
 	@Override
@@ -149,5 +171,27 @@ public class ConnectedSubModel extends ConnectedElement implements ISubModel {
 	 */
 	public SubModel getLocalCopy() {
 		return SubModel.createAsFacade(getElem());
+	}
+
+	/**
+	 * Get submodel element by given id
+	 * @param id
+	 * @return specific submodel element
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public ISubmodelElement getSubmodelElement(String id) {
+		Map<String, Object> node =(Map<String, Object>) getProxy().getModelPropertyValue(VABPathTools.concatenatePaths(MultiSubmodelElementProvider.ELEMENTS, id));
+		ISubmodelElement element = ConnectedSubmodelElementFactory.getConnectedSubmodelElement(getProxy(), MultiSubmodelElementProvider.ELEMENTS, id, node);
+		return element;		
+	}
+
+	/**
+	 * Delete a submodel element by given id
+	 * @param id
+	 */
+	@Override
+	public void deleteSubmodelElement(String id) {
+		getProxy().deleteValue(VABPathTools.concatenatePaths(MultiSubmodelElementProvider.ELEMENTS, id));
 	}
 }

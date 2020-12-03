@@ -31,12 +31,16 @@ public class SubmodelElement extends VABModelMap<Object> implements ISubmodelEle
 	protected SubmodelElement() {
 		// Add model type
 		putAll(new ModelType(MODELTYPE));
-
-		putAll(new HasDataSpecification());
-		putAll(new Referable());
-		putAll(new Qualifiable());
-		putAll(new HasSemantics());
-		putAll(new HasKind());
+		setModelingKind(ModelingKind.INSTANCE);
+	}
+	
+	/**
+	 * Constructor with only mandatory attribute
+	 * @param idShort
+	 */
+	protected SubmodelElement(String idShort) {
+		this();
+		setIdShort(idShort);
 	}
 	
 	/**
@@ -109,7 +113,7 @@ public class SubmodelElement extends VABModelMap<Object> implements ISubmodelEle
 		Referable.createAsFacade(this, getKeyElement()).setParent(obj);
 	}
 
-	public void setQualifier(Collection<IConstraint> qualifiers) {
+	public void setQualifiers(Collection<IConstraint> qualifiers) {
 		Qualifiable.createAsFacade(this).setQualifiers(qualifiers);
 	}
 
@@ -145,5 +149,15 @@ public class SubmodelElement extends VABModelMap<Object> implements ISubmodelEle
 	@Override
 	public IReference getReference() {
 		return Referable.createAsFacade(this, getKeyElement()).getReference();
+	}
+	
+	@Override
+	public Object getValue() {
+		throw new UnsupportedOperationException("getValue is only possible in specific Element");
+	}
+	
+	@Override
+	public void setValue(Object value) {
+		throw new UnsupportedOperationException("setValue is only possible in specific Element");
 	}
 }

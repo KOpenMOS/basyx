@@ -7,9 +7,14 @@ import java.util.List;
 import org.eclipse.basyx.aas.manager.ConnectedAssetAdministrationShellManager;
 import org.eclipse.basyx.aas.registration.api.IAASRegistryService;
 import org.eclipse.basyx.aas.registration.proxy.AASRegistryProxy;
-import org.eclipse.basyx.components.AASServerComponent;
 import org.eclipse.basyx.components.IComponent;
-import org.eclipse.basyx.components.InMemoryRegistryComponent;
+import org.eclipse.basyx.components.aas.AASServerComponent;
+import org.eclipse.basyx.components.aas.configuration.AASServerBackend;
+import org.eclipse.basyx.components.aas.configuration.BaSyxAASServerConfiguration;
+import org.eclipse.basyx.components.configuration.BaSyxContextConfiguration;
+import org.eclipse.basyx.components.registry.RegistryComponent;
+import org.eclipse.basyx.components.registry.configuration.BaSyxRegistryConfiguration;
+import org.eclipse.basyx.components.registry.configuration.RegistryBackend;
 import org.eclipse.basyx.components.servlet.submodel.SubmodelServlet;
 import org.eclipse.basyx.submodel.metamodel.api.identifier.IIdentifier;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
@@ -78,20 +83,20 @@ public class CloudEdgeDeploymentScenario {
 	public CloudEdgeDeploymentScenario() {
 		
 		startupRegistryServer();
-		startupEdgeServer();
-		startupCloudServer();
-		
 		
 		// Create a InMemoryRegistry to be used by the manager
 		registry = new AASRegistryProxy(registryPath);
 		
+		startupEdgeServer();
+		startupCloudServer();
+
 		// Create a ConnectedAASManager with the registry created above
 		aasManager = new ConnectedAssetAdministrationShellManager(registry);
 		
 		
 		// Push the AAS to the cloud server
 		// The manager automatically registers it in the registry
-		aasManager.createAAS(ComponentBuilder.getAAS(), aasIdentifier, "http://localhost:8081/cloud");
+		aasManager.createAAS(ComponentBuilder.getAAS(), "http://localhost:8081/cloud");
 		
 		
 		// Get the docuSubmodel from the ComponentBuilder
@@ -111,7 +116,10 @@ public class CloudEdgeDeploymentScenario {
 	 * 
 	 */
 	private void startupRegistryServer() {
-		IComponent component = new InMemoryRegistryComponent("localhost", 8080, "registry", "");
+		// Start an InMemory registry server with a direct configuration
+		BaSyxContextConfiguration contextConfig = new BaSyxContextConfiguration(8080, "registry");
+		BaSyxRegistryConfiguration registryConfig = new BaSyxRegistryConfiguration(RegistryBackend.INMEMORY);
+		IComponent component = new RegistryComponent(contextConfig, registryConfig);
 		component.startComponent();
 		startedComponents.add(component);
 	}
@@ -126,8 +134,9 @@ public class CloudEdgeDeploymentScenario {
 	 */
 	private void startupEdgeServer() {
 		
-		// Create a BaSyxConetxt for port 8082 with an empty endpoint and the tmpdir for storing its data
-		BaSyxContext context = new BaSyxContext("", System.getProperty("java.io.tmpdir"), "localhost", 8082);
+		// Create a BaSyxConetxt for port 8082 with an empty endpoint
+		BaSyxContextConfiguration contextConfig = new BaSyxContextConfiguration(8082, "");
+		BaSyxContext context = contextConfig.createBaSyxContext();
 		
 		// Get the edgeSubmodel from the ComponentBuilder
 		SubModel edgeSubmodel = ComponentBuilder.createEdgeSubModel();
@@ -152,9 +161,15 @@ public class CloudEdgeDeploymentScenario {
 	 * 
 	 */
 	private void startupCloudServer() {
-		
-		// Create a server at port 8081 with the endpoint "/cloud"
-		AASServerComponent cloudServer = new AASServerComponent("localhost", 8081, "/cloud", "/");
+		// Load the server context from a .properties file resource
+		BaSyxContextConfiguration contextConfig = new BaSyxContextConfiguration();
+		contextConfig.loadFromResource("CloudEdgeDeploymentScenarioAASContext.properties");
+
+		// Create the AAS - Can alternatively also be loaded from a .property file
+		BaSyxAASServerConfiguration aasServerConfig = new BaSyxAASServerConfiguration(AASServerBackend.INMEMORY, "", registryPath);
+
+		// Create a server according to this configuration
+		AASServerComponent cloudServer = new AASServerComponent(contextConfig, aasServerConfig);
 		
 		// Start the created server
 		cloudServer.startComponent();

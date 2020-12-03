@@ -2,14 +2,15 @@ package org.eclipse.basyx.submodel.restapi;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.basyx.submodel.metamodel.api.ISubModel;
+import org.eclipse.basyx.submodel.metamodel.facade.SubmodelElementMapCollectionConverter;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.SubmodelElement;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.dataelement.property.Property;
+import org.eclipse.basyx.submodel.metamodel.map.submodelelement.operation.Operation;
 import org.eclipse.basyx.submodel.restapi.api.ISubmodelAPI;
 import org.eclipse.basyx.submodel.restapi.vab.VABSubmodelAPI;
 import org.eclipse.basyx.vab.exception.provider.MalformedRequestException;
@@ -36,6 +37,9 @@ import org.eclipse.basyx.vab.modelprovider.lambda.VABLambdaProvider;
  */
 public class SubModelProvider extends MetaModelProvider {
 
+	public static final String VALUES = "values";
+	public static final String SUBMODEL = "submodel";
+	
 	ISubmodelAPI submodelAPI;
 
 	/**
@@ -77,16 +81,16 @@ public class SubModelProvider extends MetaModelProvider {
 	 */
 	private String removeSubmodelPrefix(String path) {
 		path = VABPathTools.stripSlashes(path);
-		if (path.startsWith("submodel/")) {
+		String submodelWithSlash = SUBMODEL + "/";
+		if (path.startsWith(submodelWithSlash)) {
 			path = path.replaceFirst("submodel/", "");
-		} else if (path.equals("submodel")) {
+		} else if (path.equals(SUBMODEL)) {
 			path = "";
 		}
 		path = VABPathTools.stripSlashes(path);
 		return path;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object getModelPropertyValue(String path) throws ProviderException {
 		VABPathTools.checkPathForNull(path);
@@ -94,63 +98,47 @@ public class SubModelProvider extends MetaModelProvider {
 		if (path.isEmpty()) {
 			ISubModel sm = submodelAPI.getSubmodel();
 
-			// TODO: This is a hack, remove it at a later point in time
 			// Change internal map representation to set
-			if (sm instanceof Map<?, ?>) {
-				Map<String, Object> map = (Map<String, Object>) sm;
-				setMapToSet(map, SubModel.SUBMODELELEMENT);
+			if (sm instanceof SubModel) {
+				return SubmodelElementMapCollectionConverter.smToMap((SubModel) sm);
+			} else {
+				return sm;
 			}
-			return sm;
 		} else {
 			String[] splitted = VABPathTools.splitPath(path);
-			String qualifier = splitted[0];
-			if (splitted.length == 1 && isQualifier(splitted[0])) { // Request for either properties, operations or submodelElements
-				switch (qualifier) {
-				case SubmodelElementProvider.ELEMENTS:
-					return submodelAPI.getElements();
-				case SubmodelElementProvider.OPERATIONS:
-					return submodelAPI.getOperations();
-				case SubmodelElementProvider.PROPERTIES:
-					return submodelAPI.getProperties();
-				}
+			// Request for submodelElements
+			if (splitted.length == 1 && splitted[0].equals(VALUES)) {
+				// Request for values of all submodelElements
+				return submodelAPI.getSubmodel().getValues();
+			} else if (splitted.length == 1 && splitted[0].equals(MultiSubmodelElementProvider.ELEMENTS)) {
+				return submodelAPI.getSubmodelElements();
 			} else if (splitted.length >= 2 && isQualifier(splitted[0])) { // Request for element with specific idShort
-				String idShort = splitted[1];
-				if (splitted.length == 2) {
-					return submodelAPI.getSubmodelElement(idShort);
-				} else if (isPropertyValuePath(splitted)) { // Request for the value of an property
-					return submodelAPI.getPropertyValue(idShort);
-				} else if (isSubmodelElementListPath(splitted)) {
-					// Create list from array and wrap it in ArrayList to ensure modifiability
-					List<String> idShorts = getIdShorts(splitted);
-					
-					if (endsWithValue(splitted)) {
-						return submodelAPI.getNestedPropertyValue(idShorts);
-					} else {
-						return submodelAPI.getNestedSubmodelElement(idShorts);
-					}
-				}
-			}
-		}
-		throw new MalformedRequestException("Unknown path " + path + " was requested");
-	}
+				// Remove initial "/submodelElements"
+				path = removeSMElementPrefix(path);
 
-	/**
-	 * Converts a map entry to a set, if it is also a map
-	 */
-	@SuppressWarnings("unchecked")
-	private void setMapToSet(Map<String, Object> map, String key) {
-		Object mapEntry = map.get(key);
-		if (mapEntry instanceof Map<?, ?>) {
-			Map<String, Object> elements = (Map<String, Object>) mapEntry;
-			map.put(key, new HashSet<Object>(elements.values()));
-		}
+                if (endsWithValue(splitted)) { // Request for the value of an property
+                    String idShortPath = path.replace("/value", "");
+                    return submodelAPI.getSubmodelElementValue(idShortPath);
+                } else if (isInvocationListPath(splitted)) {
+                    List<String> idShorts = getIdShorts(splitted);
+
+                    // Remove invocationList/{requestId} from the idShorts
+                    idShorts.remove(idShorts.size() - 1);
+                    idShorts.remove(idShorts.size() - 1);
+                    return submodelAPI.getOperationResult(idShorts.get(0), splitted[splitted.length - 1]);
+                } else {
+                    return submodelAPI.getSubmodelElement(path);
+                }
+            }
+        }
+        throw new MalformedRequestException("Unknown path " + path + " was requested");
 	}
 
 	private List<String> getIdShorts(String[] splitted) {
 		// Create list from array and wrap it in ArrayList to ensure modifiability
 		List<String> idShorts = new ArrayList<>(Arrays.asList(splitted));
 
-		// Drop inital "submodels"
+		// Drop inital "submodelElements"
 		idShorts.remove(0);
 
 		// If value is contained in path, remove it
@@ -160,18 +148,17 @@ public class SubModelProvider extends MetaModelProvider {
 		return idShorts;
 	}
 
-	private boolean isPropertyValuePath(String[] splitted) {
-		return splitted.length == 3 && splitted[0].equals(SubmodelElementProvider.PROPERTIES) && endsWithValue(splitted);
-	}
 
 	private boolean endsWithValue(String[] splitted) {
 		return splitted[splitted.length - 1].equals(Property.VALUE);
 	}
 
-	private boolean isSubmodelElementListPath(String[] splitted) {
-		return splitted.length > 2 && splitted[0].equals(SubmodelElementProvider.ELEMENTS);
+
+	private boolean isInvocationListPath(String[] splitted) {
+		return splitted.length > 2 && splitted[splitted.length - 2].equals(OperationProvider.INVOCATION_LIST);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void setModelPropertyValue(String path, Object newValue) throws ProviderException {
 		path = removeSubmodelPrefix(path);
@@ -179,25 +166,27 @@ public class SubModelProvider extends MetaModelProvider {
 			throw new MalformedRequestException("Set on \"submodel\" not supported");
 		} else {
 			String[] splitted = VABPathTools.splitPath(path);
-			if (isPropertyValuePath(splitted)) {
-				String idShort = splitted[1];
-				submodelAPI.updateProperty(idShort, newValue);
+			path = removeSMElementPrefix(path);
+			String idshortPath = path.replace("/value", "");
+			if (endsWithValue(splitted)) {
+				submodelAPI.updateSubmodelElement(idshortPath, newValue);
 			} else {
-				throw new MalformedRequestException("Update on path " + path + " not supported");
+				
+				SubmodelElement element = SubmodelElement.createAsFacade((Map<String, Object>) newValue);
+				
+				if(!path.endsWith(element.getIdShort())) {
+					throw new MalformedRequestException("The idShort of given Element '"
+							+ element.getIdShort() + "' does not match the ending of the given path '" + path + "'");
+				}
+				
+				submodelAPI.addSubmodelElement(idshortPath, element);
 			}
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void createValue(String path, Object newEntity) throws ProviderException {
-		path = removeSubmodelPrefix(path);
-		if (path.isEmpty()) {
-			// not possible to overwrite existing submodels
-			throw new MalformedRequestException("Invalid access");
-		} else {
-			submodelAPI.addSubmodelElement(SubmodelElement.createAsFacade((Map<String, Object>) newEntity));
-		}
+		throw new MalformedRequestException("POST (create) on '" + path + "' not allowed. Use PUT (set) instead.");
 	}
 
 	@Override
@@ -205,9 +194,13 @@ public class SubModelProvider extends MetaModelProvider {
 		path = removeSubmodelPrefix(path);
 		if (!path.isEmpty()) {
 			String[] splitted = VABPathTools.splitPath(path);
-			if (splitted.length == 2 && isQualifier(splitted[0])) {
-				String idShort = splitted[1];
-				submodelAPI.deleteSubmodelElement(idShort);
+			if (isQualifier(splitted[0])) {
+				if (splitted.length > 2) {
+					path = removeSMElementPrefix(path);
+					submodelAPI.deleteSubmodelElement(path);
+				} else {
+					submodelAPI.deleteSubmodelElement(splitted[1]);
+				}
 			} else {
 				throw new MalformedRequestException("Path " + path + " not supported for delete");
 			}
@@ -217,7 +210,7 @@ public class SubModelProvider extends MetaModelProvider {
 	}
 
 	private boolean isQualifier(String str) {
-		return str.equals(SubmodelElementProvider.ELEMENTS) || str.equals(SubmodelElementProvider.OPERATIONS) || str.equals(SubmodelElementProvider.PROPERTIES);
+		return str.equals(MultiSubmodelElementProvider.ELEMENTS);
 	}
 
 	@Override
@@ -229,19 +222,28 @@ public class SubModelProvider extends MetaModelProvider {
 	public Object invokeOperation(String path, Object... parameters) throws ProviderException {
 		path = removeSubmodelPrefix(path);
 		if (path.isEmpty()) {
-			throw new MalformedRequestException("Invalid access");
+			throw new MalformedRequestException("Given path must not be empty");
 		} else {
-			String[] splitted = VABPathTools.splitPath(path);
-			if (splitted.length == 2 && splitted[0].equals(SubmodelElementProvider.OPERATIONS)) {
-				String idShort = splitted[1];
-				return submodelAPI.invokeOperation(idShort, parameters);
+			if (VABPathTools.isOperationInvokationPath(path)) {
+				if(path.endsWith(OperationProvider.ASYNC)) {
+					path = removeSMElementPrefix(path);
+					path = path.replace(Operation.INVOKE + OperationProvider.ASYNC, "");
+					return submodelAPI.invokeAsync(path, parameters);
+				} else {
+					path = removeSMElementPrefix(path);
+					return submodelAPI.invokeOperation(path, parameters);
+				}
 			} else {
-				throw new MalformedRequestException("Unknown path " + path);
+				throw new MalformedRequestException("Given path '" + path + "' does not end in /invoke");
 			}
 		}
 	}
 
 	protected void setAPI(ISubmodelAPI api) {
 		this.submodelAPI = api;
+	}
+	
+	private String removeSMElementPrefix(String path) {
+		return  path.replace("submodelElements", "");
 	}
 }

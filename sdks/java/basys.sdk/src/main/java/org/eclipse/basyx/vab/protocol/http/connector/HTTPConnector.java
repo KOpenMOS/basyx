@@ -47,7 +47,7 @@ public class HTTPConnector implements IBaSyxConnector {
 	}
 
 	public HTTPConnector(String address) {
-		this(address, MediaType.APPLICATION_JSON);
+		this(address, MediaType.APPLICATION_JSON + ";charset=UTF-8");
 	}
 
 	public HTTPConnector(String address, String mediaType) {
@@ -128,7 +128,6 @@ public class HTTPConnector implements IBaSyxConnector {
 		// Build request, set JSON encoding
 		Builder request = resource.request();
 		request.accept(mediaType);
-
 		// Return JSON request
 		return request;
 	}
@@ -261,5 +260,15 @@ public class HTTPConnector implements IBaSyxConnector {
 
 	private ProviderException handleProcessingException(HttpMethod method, ProcessingException e) {
 		return new ProviderException("[HTTP " + method.name() + "] Failed to request " + this.address + " with mediatype " + this.mediaType);
+	}
+
+	/**
+	 * Get string representation of endpoint for given path for debugging. 
+	 * @param path Requested path
+	 * @return String representing requested endpoint
+	 */
+	@Override
+	public String getEndpointRepresentation(String path) {
+		return VABPathTools.concatenatePaths(address, path);
 	}
 }

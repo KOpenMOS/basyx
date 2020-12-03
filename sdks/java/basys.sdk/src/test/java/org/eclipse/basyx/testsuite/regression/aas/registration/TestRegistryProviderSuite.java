@@ -45,8 +45,8 @@ public abstract class TestRegistryProviderSuite {
 	protected String smIdShort2 = "smIdShort2";
 	protected String aasEndpoint1 = "http://www.registrytest.de/aas01/aas";
 	protected String aasEndpoint2 = "http://www.registrytest.de/aas02/aas";
-	protected String smEndpoint1 = "http://www.registrytest.de/aas01/aas/submodels/" + smIdShort1;
-	protected String smEndpoint2 = "http://www.registrytest.de/aas01/aas/submodels/" + smIdShort2;
+	protected String smEndpoint1 = "http://www.registrytest.de/aas01/aas/submodels/" + smIdShort1 + "/submodel";
+	protected String smEndpoint2 = "http://www.registrytest.de/aas01/aas/submodels/" + smIdShort2 + "/submodel";
 	protected Asset asset1;
 	protected Asset asset2;
 	/**
@@ -125,7 +125,7 @@ public abstract class TestRegistryProviderSuite {
 	 * Checks, if the given descriptor is valid. Should contain the values of the first descriptor
 	 * as given by the test setup
 	 */
-	private void validateDescriptor1(AASDescriptor descriptor) {
+	protected void validateDescriptor1(AASDescriptor descriptor) {
 		assertEquals(aasId1.getId(), descriptor.getIdentifier().getId());
 		assertEquals(aasId1.getIdType(), descriptor.getIdentifier().getIdType());
 		IAsset asset = descriptor.getAsset();
@@ -144,7 +144,7 @@ public abstract class TestRegistryProviderSuite {
 	 * Checks, if the given descriptor is valid. Should contain the values of the second descriptor
 	 * as given by the test setup
 	 */
-	private void validateDescriptor2(AASDescriptor descriptor) {
+	protected void validateDescriptor2(AASDescriptor descriptor) {
 		assertEquals(aasId2.getId(), descriptor.getIdentifier().getId());
 		assertEquals(aasId2.getIdType(), descriptor.getIdentifier().getIdType());
 		IAsset asset = descriptor.getAsset();
@@ -315,5 +315,10 @@ public abstract class TestRegistryProviderSuite {
 		aasDesc = proxy.lookupAAS(aasId1);
 		assertNotNull(aasDesc.getSubmodelDescriptorFromIdShort(smIdShort1));
 		assertNull(aasDesc.getSubmodelDescriptorFromIdShort(smIdShort2));
+	}
+	
+	@Test(expected = ResourceNotFoundException.class)
+	public void testRegisterSubmodelToNotExistingAAS() {
+		proxy.register(new Identifier(IdentifierType.CUSTOM, "nonExistent"), new SubmodelDescriptor(smIdShort1, smId1, smEndpoint1));
 	}
 }

@@ -2,22 +2,20 @@ package org.eclipse.basyx.submodel.restapi.vab;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.basyx.submodel.metamodel.api.ISubModel;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.ISubmodelElement;
-import org.eclipse.basyx.submodel.metamodel.api.submodelelement.dataelement.IProperty;
 import org.eclipse.basyx.submodel.metamodel.api.submodelelement.operation.IOperation;
 import org.eclipse.basyx.submodel.metamodel.map.SubModel;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.SubmodelElement;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.dataelement.property.Property;
 import org.eclipse.basyx.submodel.metamodel.map.submodelelement.operation.Operation;
-import org.eclipse.basyx.submodel.restapi.SubmodelElementProvider;
+import org.eclipse.basyx.submodel.restapi.MultiSubmodelElementProvider;
+import org.eclipse.basyx.submodel.restapi.OperationProvider;
 import org.eclipse.basyx.submodel.restapi.api.ISubmodelAPI;
 import org.eclipse.basyx.vab.modelprovider.VABElementProxy;
-import org.eclipse.basyx.vab.modelprovider.VABPathTools;
 import org.eclipse.basyx.vab.modelprovider.api.IModelProvider;
 
 /**
@@ -50,9 +48,9 @@ public class VABSubmodelAPI implements ISubmodelAPI {
 	 * @return returns the SubmodelElementProvider pointing to the contained
 	 *         submodelelements
 	 */
-	private SubmodelElementProvider getElementProvider() {
+	private MultiSubmodelElementProvider getElementProvider() {
 		IModelProvider elementProxy = new VABElementProxy(SubModel.SUBMODELELEMENT, modelProvider);
-		return new SubmodelElementProvider(elementProxy);
+		return new MultiSubmodelElementProvider(elementProxy);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -67,79 +65,71 @@ public class VABSubmodelAPI implements ISubmodelAPI {
 		return SubModel.createAsFacade(smCopy);
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public Collection<ISubmodelElement> getElements() {
-		Collection<Map<String, Object>> operations = (Collection<Map<String, Object>>) getElementProvider().getModelPropertyValue(SubmodelElementProvider.ELEMENTS);
-		return operations.stream().map(e -> SubmodelElement.createAsFacade(e)).collect(Collectors.toList());
-	}
-
 	@Override
 	public void addSubmodelElement(ISubmodelElement elem) {
-		getElementProvider().createValue(SubmodelElementProvider.ELEMENTS + "/" + elem.getIdShort(), elem);
+		getElementProvider().createValue(MultiSubmodelElementProvider.ELEMENTS, elem);
 	}
 
 	@Override
-	public void deleteSubmodelElement(String idShort) {
-		getElementProvider().deleteValue(SubmodelElementProvider.ELEMENTS + "/" + idShort);
+	public void addSubmodelElement(String idShortPath, ISubmodelElement elem) {
+		getElementProvider().createValue(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath, elem);
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+	public void deleteSubmodelElement(String idShortPath) {
+		getElementProvider().deleteValue(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath);
+	}
+
+
 	@Override
 	public Collection<IOperation> getOperations() {
-		Collection<Map<String, Object>> operations = (Collection<Map<String, Object>>) getElementProvider().getModelPropertyValue(SubmodelElementProvider.OPERATIONS);
-		return operations.stream().map(e -> Operation.createAsFacade(e)).collect(Collectors.toList());
+		return getSubmodelElements().stream().filter(e -> e instanceof IOperation).map(e -> (IOperation) e).collect(Collectors.toList());
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Collection<IProperty> getProperties() {
-		Collection<Map<String, Object>> props = (Collection<Map<String, Object>>) getElementProvider().getModelPropertyValue(SubmodelElementProvider.PROPERTIES);
-		return props.stream().map(e -> Property.createAsFacade(e)).collect(Collectors.toList());
+	public Collection<ISubmodelElement> getSubmodelElements() {
+		Collection<Map<String, Object>> elements = (Collection<Map<String, Object>>) getElementProvider()
+				.getModelPropertyValue(MultiSubmodelElementProvider.ELEMENTS);
+		return elements.stream().map(SubmodelElement::createAsFacade).collect(Collectors.toList());
 	}
 
 	@Override
-	public void updateProperty(String idShort, Object newValue) {
-		getElementProvider().setModelPropertyValue(buildValuePathForProperty(idShort), newValue);
+	public void updateSubmodelElement(String idShortPath, Object newValue) {
+		getElementProvider().setModelPropertyValue(buildValuePathForProperty(idShortPath), newValue);
 	}
 
 	@Override
-	public Object getPropertyValue(String idShort) {
-		return getElementProvider().getModelPropertyValue(buildValuePathForProperty(idShort));
+	public Object getSubmodelElementValue(String idShortPath) {
+		return getElementProvider().getModelPropertyValue(buildValuePathForProperty(idShortPath));
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public ISubmodelElement getSubmodelElement(String idShort) {
-		return SubmodelElement.createAsFacade((Map<String, Object>) getElementProvider().getModelPropertyValue(SubmodelElementProvider.ELEMENTS + "/" + idShort));
+	public ISubmodelElement getSubmodelElement(String idShortPath) {
+		return SubmodelElement.createAsFacade((Map<String, Object>) getElementProvider().getModelPropertyValue(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath));
 	}
 
 	@Override
-	public Object invokeOperation(String idShort, Object... params) {
-		return getElementProvider().invokeOperation(SubmodelElementProvider.OPERATIONS + "/" + idShort, params);
+	public Object invokeOperation(String idShortPath, Object... params) {
+		return getElementProvider().invokeOperation(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath, params);
 	}
-
-	private String buildValuePathForProperty(String idShort) {
-		return SubmodelElementProvider.PROPERTIES + "/" + idShort + "/" + Property.VALUE;
-	}
-
+	
+	
 	@Override
-	public Object getNestedPropertyValue(List<String> idShorts) {
-		return getElementProvider().getModelPropertyValue(buildNestedElementPath(idShorts) + "/" + Property.VALUE);
+	public Object invokeAsync(String idShortPath, Object... params) {
+		return getElementProvider().invokeOperation(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath +"/" + Operation.INVOKE + OperationProvider.ASYNC, params);
 	}
 
-	@SuppressWarnings("unchecked")
+	private String buildValuePathForProperty(String idShortPath) {
+		return MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath + "/" + Property.VALUE;
+	}
+
+	
 	@Override
-	public ISubmodelElement getNestedSubmodelElement(List<String> idShorts) {
-		Map<String, Object> map = (Map<String, Object>) getElementProvider().getModelPropertyValue(buildNestedElementPath(idShorts));
-		return SubmodelElement.createAsFacade(map);
+	public Object getOperationResult(String idShortPath, String requestId) {
+		return getElementProvider().getModelPropertyValue(MultiSubmodelElementProvider.ELEMENTS + "/" + idShortPath + "/" + OperationProvider.INVOCATION_LIST + "/" + requestId);
 	}
 
-	/**
-	 * @param idShorts
-	 * @return
-	 */
-	private String buildNestedElementPath(List<String> idShorts) {
-		return SubmodelElementProvider.ELEMENTS + "/" + VABPathTools.concatenatePaths(idShorts.toArray(new String[1]));
-	}
+
 }
