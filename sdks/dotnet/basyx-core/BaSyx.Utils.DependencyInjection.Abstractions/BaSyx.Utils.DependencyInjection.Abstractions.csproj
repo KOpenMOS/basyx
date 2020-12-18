@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Library</OutputType>
@@ -27,8 +27,5 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>Full</DebugType>
   </PropertyGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="IF EXIST %25BASYX_REPO%25 ( dotnet pack &quot;$(ProjectPath)&quot; --no-build --include-source --include-symbols --output &quot;%25BASYX_REPO%25&quot; ) ELSE ( ECHO BASYX_REPO Environment Variable not found)" />
-  </Target>
+  
 </Project>
